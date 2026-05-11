@@ -112,7 +112,6 @@ router.post(
     } else {
       if (loginrole === "partner") {
         const partner = await DeliveryPartner.findOne({ phone });
-        console.log('sdsd', loginrole)
 
         const token = signToken({ id: partner.id, phone, role: 'partner', name: partner.name });
         return res.json({
@@ -138,7 +137,6 @@ router.post(
         });
       }
     }
-    console.log(verificationCheck)
 
     // PARTNER LOGIN
 
