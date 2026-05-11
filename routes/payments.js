@@ -160,7 +160,7 @@ router.post('/create-order',
 
         order_meta: {
           return_url:
-            "https://test.cashfree.com/pgappsdemos/return.php?order_id={order_id}",
+            "https://test.cashfree.com/pgappsdemos/return.php?order_id={order_id}"
         },
       };
 
