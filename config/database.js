@@ -32,7 +32,7 @@ async function connectDB() {
   if (mongoose.connection.readyState === 1) return mongoose.connection;
 
   if (!connectionPromise) {
-    const mongoUri = process.env.MONGO_URI;
+    const mongoUri = process.env.MONGODB_URI;
     const options = {};
 
     if (process.env.MONGO_DB_NAME) {
