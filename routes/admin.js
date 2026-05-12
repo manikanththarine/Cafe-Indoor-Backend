@@ -112,8 +112,7 @@ router.get('/revenue/summary', verifyToken('admin'), asyncHandler(async (req, re
   res.json({ data, transactions: serializedTransactions });
 }));
 
-router.get('/settings',asyncHandler(async (_req, res) => {
-  console.log('sdjsdsj')
+router.get('/settings', verifyToken('admin'), asyncHandler(async (_req, res) => {
   const settings = await Setting.find().sort({ key: 1 });
   const obj = {};
   settings.forEach((setting) => { obj[setting.key] = setting.value; });
@@ -156,7 +155,7 @@ router.put(
     // 3. Update Order
     order.partner_id = partner._id;
     order.status = 'conformed';
-    order.status_confirmed_at =  new Date();
+    order.status_confirmed_at = new Date();
 
     await order.save();
 

@@ -6,6 +6,7 @@ const { asyncHandler } = require('../utils/asyncHandler');
 const { escapeRegex, serializeDoc } = require('../utils/mongo');
 
 const router = express.Router();
+
 router.get(
   '/allusers',
   asyncHandler(async (req, res) => {
