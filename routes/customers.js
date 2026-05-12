@@ -6,13 +6,16 @@ const { asyncHandler } = require('../utils/asyncHandler');
 const { escapeRegex, serializeDoc } = require('../utils/mongo');
 
 const router = express.Router();
-router.get('/allusers', asyncHandler(async (req, res) => {
-  const customer = await Customer.find();
-  console.log(customer)
-  if (!customer) return res.status(404).json({ error: 'NOT_FOUND' });
-  res.json({ customer: serializeDoc(customer) });
-}));
+router.get(
+  '/allusers',
+  asyncHandler(async (req, res) => {
+    const customers = await Customer.find();
 
+    res.json({
+      customers: serializeDoc(customers),
+    });
+  })
+);
 router.get('/profile', verifyToken('customer'), asyncHandler(async (req, res) => {
   const customer = await Customer.findById(req.user.id);
   if (!customer) return res.status(404).json({ error: 'NOT_FOUND' });
