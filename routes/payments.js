@@ -148,11 +148,11 @@ router.post('/create-order',
       const orderId = `ORDER_${Date.now()}`;
       const request = {
         order_id: orderId,
-        order_amount: Number(orderAmount),
+        order_amount: String(Number(orderAmount).toFixed(2)), // Fix: Convert to String with decimals
         order_currency: "INR",
 
         customer_details: {
-          customer_id: "69fae3a58c2feafcd74bc335",
+          customer_id: "6a02dd1a4fcbc76fee13d408",
           customer_name: customerName,
           customer_email: customerEmail,
           customer_phone: customerPhone,
