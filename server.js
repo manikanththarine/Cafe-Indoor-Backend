@@ -2,18 +2,16 @@
 process.env.TZ = 'Asia/Kolkata';
 require('dotenv').config();
 
-const cron = require('node-cron');
-const { Subscription } = require('./models');
 const express = require('express');
 const cors = require('cors');
-const Razorpay=require('razorpay');
-const {validateWebhookSignature}=require('razorpay/dist/utils/razorpay-utils')
+const cron = require('node-cron');
 
+const { Subscription } = require('./models');
 const { errorHandler } = require('./middleware/errorHandler');
 const { initCronJobs } = require('./cron/index');
 const { connectDB } = require('./config/database');
 
-// Routes
+
 const authRoutes = require('./routes/auth');
 const bookingRoutes = require('./routes/booking');
 const ordersRoutes = require('./routes/orders');
@@ -27,10 +25,69 @@ const adminRoutes = require('./routes/admin');
 const notificationsRoutes = require('./routes/notifications');
 
 const app = express();
-// const PORT = process.env.PORT || 3001;
 
-app.use(cors());
 app.use(express.json());
+
+const cors = require('cors');
+
+app.use(cors({
+  origin: function (origin, callback) {
+
+    // allow mobile apps, postman, expo native
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // localhost
+    if (
+      origin.startsWith('http://localhost') ||
+      origin.startsWith('http://127.0.0.1')
+    ) {
+      return callback(null, true);
+    }
+
+    // expo
+    if (
+      origin.includes('expo.dev') ||
+      origin.includes('exp.direct')
+    ) {
+      return callback(null, true);
+    }
+
+    // vercel frontend
+    if (origin.includes('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    return callback(null, true);
+  },
+
+  credentials: true,
+
+  methods: [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS'
+  ],
+
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization'
+  ]
+}));
+
+app.options('*', cors());
+
+
+
+
+
+
+
+
 
 app.use('/api/auth', authRoutes);
 app.use('/api/booking', bookingRoutes);
