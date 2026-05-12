@@ -180,6 +180,59 @@ router.post('/create-order',
           response.data.payment_session_id,
       });
 
+      // const { selectedStartDate } = subscriptionPlan;
+      //     const mealStartDates = normalizeMealStartDates({
+      //       mealType,
+      //       selectedStartDate,
+      //       mealStartDates: subscriptionPlan.mealStartDates,
+      //     });
+
+      //     validateStartDates({ mealType, selectedStartDate, mealStartDates });
+
+      //     const durationDays = PLAN_DURATIONS[planType];
+      //     const endDate = addDays(selectedStartDate, durationDays - 1);
+      //     const { amount, baseAmount, appliedCoupon } = await calculateCheckoutAmount({
+      //       planType,
+      //       mealType,
+      //       couponCode,
+      //     });
+
+      //     const receipt = `ci_${req.user.id}_${Date.now()}`;
+      //     const order = await createOrder({
+      //       amount,
+      //       receipt,
+      //       notes: {
+      //         customerId: String(req.user.id),
+      //         planType,
+      //         mealType,
+      //         startDate: selectedStartDate,
+      //       },
+      //     });
+
+      //     await PaymentAttempt.create({
+      //       customer_id: req.user.id,
+      //       plan_type: planType,
+      //       meal_type: mealType,
+      //       coupon_code: appliedCoupon?.code || null,
+      //       base_amount: baseAmount,
+      //       amount: order.amount,
+      //       currency: order.currency || 'INR',
+      //       receipt,
+      //       razorpay_order_id: order.id,
+      //       start_date: selectedStartDate,
+      //       end_date: endDate,
+      //       meal_start_dates: mealStartDates,
+      //       status: 'created',
+      //     });
+
+      //     res.json({
+      //       razorpayOrderId: order.id,
+      //       amount: order.amount,
+      //       currency: order.currency || 'INR',
+      //       keyId: process.env.RAZORPAY_KEY_ID || '',
+      //       isMock: !!order.mock,
+      //     });
+
 
 
     } catch (error) {
