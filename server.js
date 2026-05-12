@@ -27,8 +27,8 @@ const notificationsRoutes = require('./routes/notifications');
 const app = express();
 
 app.use(express.json());
-app.use(cors());
-app.options('*', cors());
+app.use(cors({ origin: true, credentials: true }));
+
 app.use('/api/auth', authRoutes);
 app.use('/api/booking', bookingRoutes);
 app.post('/api/orders/book', (req, res, next) => {
