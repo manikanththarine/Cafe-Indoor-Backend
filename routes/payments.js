@@ -155,7 +155,7 @@ router.post('/create-order',
           customer_id: "6a02dd1a4fcbc76fee13d408",
           customer_name: customerName,
           customer_email: customerEmail,
-          customer_phone: customerPhone,
+          customer_phone: String(customerPhone),
         },
 
         order_meta: {
