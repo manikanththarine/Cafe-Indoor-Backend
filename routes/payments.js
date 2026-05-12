@@ -125,11 +125,6 @@ router.get('/checkout-config', asyncHandler(async (_req, res) => {
 router.post('/create-order',
   body('planType').isIn(['monthly', 'trial']),
   body('mealType').isIn(['lunch', 'dinner', 'both']),
-  body('couponCode')
-    .if(body('couponCode').exists())
-    .isString()
-    .trim()
-    .isLength({ max: 50 }),
   body('subscriptionPlan.selectedStartDate').matches(/^\d{4}-\d{2}-\d{2}$/),
   body('subscriptionPlan.mealStartDates').optional().isObject(),
   asyncHandler(async (req, res) => {
