@@ -12,6 +12,8 @@ const { initCronJobs } = require('./cron/index');
 const { connectDB } = require('./config/database');
 
 
+
+
 const authRoutes = require('./routes/auth');
 const bookingRoutes = require('./routes/booking');
 const ordersRoutes = require('./routes/orders');
@@ -29,6 +31,27 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 app.options('*', cors());
+
+let isConnected = false;
+
+async function startServer() {
+  if (!isConnected) {
+    await connectDB();
+    initCronJobs();
+
+    console.log("MongoDB Connected");
+    isConnected = true;
+  }
+}
+
+app.use(async (req, res, next) => {
+  try {
+    await startServer();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/booking', bookingRoutes);
@@ -55,26 +78,7 @@ app.get('/api/health', (req, res) => {
 
 app.use(errorHandler);
 
-let isConnected = false;
 
-async function startServer() {
-  if (!isConnected) {
-    await connectDB();
-    initCronJobs();
-
-    console.log("MongoDB Connected");
-    isConnected = true;
-  }
-}
-
-app.use(async (req, res, next) => {
-  try {
-    await startServer();
-    next();
-  } catch (err) {
-    next(err);
-  }
-});
 
 
 
