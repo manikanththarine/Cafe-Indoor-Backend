@@ -27,68 +27,8 @@ const notificationsRoutes = require('./routes/notifications');
 const app = express();
 
 app.use(express.json());
-
-const cors = require('cors');
-
-app.use(cors({
-  origin: function (origin, callback) {
-
-    // allow mobile apps, postman, expo native
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    // localhost
-    if (
-      origin.startsWith('http://localhost') ||
-      origin.startsWith('http://127.0.0.1')
-    ) {
-      return callback(null, true);
-    }
-
-    // expo
-    if (
-      origin.includes('expo.dev') ||
-      origin.includes('exp.direct')
-    ) {
-      return callback(null, true);
-    }
-
-    // vercel frontend
-    if (origin.includes('.vercel.app')) {
-      return callback(null, true);
-    }
-
-    return callback(null, true);
-  },
-
-  credentials: true,
-
-  methods: [
-    'GET',
-    'POST',
-    'PUT',
-    'PATCH',
-    'DELETE',
-    'OPTIONS'
-  ],
-
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization'
-  ]
-}));
-
+app.use(cors());
 app.options('*', cors());
-
-
-
-
-
-
-
-
-
 app.use('/api/auth', authRoutes);
 app.use('/api/booking', bookingRoutes);
 app.post('/api/orders/book', (req, res, next) => {
@@ -127,10 +67,13 @@ async function startServer() {
 }
 
 app.use(async (req, res, next) => {
-  await startServer();
-  next();
+  try {
+    await startServer();
+    next();
+  } catch (err) {
+    next(err);
+  }
 });
-
 
 
 
