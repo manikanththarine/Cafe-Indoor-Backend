@@ -142,6 +142,7 @@ router.post('/create-order', verifyToken('customer'),
         customerName,
         customerPhone,
         customerEmail,
+        customer_id,
         planType, mealType, couponCode, subscriptionPlan = {}
       } = req.body;
 
@@ -152,7 +153,7 @@ router.post('/create-order', verifyToken('customer'),
         order_currency: "INR",
 
         customer_details: {
-          customer_id: "6a02dd1a4fcbc76fee13d408",
+          customer_id: customer_id,
           customer_name: customerName,
           customer_email: customerEmail,
           customer_phone: customerPhone ? String(customerPhone).trim() : "9999999999",
