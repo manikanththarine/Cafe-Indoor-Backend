@@ -148,14 +148,14 @@ router.post('/create-order', verifyToken('customer'),
       const orderId = `ORDER_${Date.now()}`;
       const request = {
         order_id: orderId,
-        order_amount: Number(orderAmount).toFixed(2), // Fix: Convert to String with decimals
+        order_amount: Number(9550).toFixed(2), // Fix: Convert to String with decimals
         order_currency: "INR",
 
         customer_details: {
           customer_id: "6a02dd1a4fcbc76fee13d408",
-          customer_name: customerName,
-          customer_email: customerEmail,
-          customer_phone: customerPhone ? String(customerPhone).trim() : "9999999999",
+          customer_name: "manikanth",
+          customer_email: "manikanththarine31@gmail.com",
+          customer_phone:  "9999999999",
         },
 
         order_meta: {
