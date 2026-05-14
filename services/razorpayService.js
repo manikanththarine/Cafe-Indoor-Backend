@@ -3,43 +3,20 @@ const crypto = require("crypto");
 
 let razorpayInstance = null;
 
-function getRazorpay() {
-  if (!razorpayInstance) {
-    const key_id = process.env.RAZORPAY_KEY_ID;
-    const key_secret = process.env.RAZORPAY_KEY_SECRET;
-
-    if (!key_id || !key_secret) {
-      console.warn("Razorpay keys missing");
-      return null;
-    }
-
-    razorpayInstance = new Razorpay({
-      key_id,
-      key_secret,
-    });
-  }
-  return razorpayInstance;
-}
+const instance = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
 // ✅ CREATE ORDER (used in /create-order route)
 async function createOrder({ amount, receipt, notes }) {
   const isMock = process.env.RAZORPAY_MOCK === 'true';
-  const rzp = getRazorpay();
 
-  if (isMock || !rzp) {
-    return {
-      id: "mock_order_" + Date.now(),
-      amount: Math.round(amount * 100),
-      currency: "INR",
-      mock: true,
-    };
-  }
-
-  const order = await rzp.orders.create({
-    amount: Math.round(amount * 100), // convert rupees to paise
-    currency: "INR",
+  const order = await instance.orders.create({
+    amount: amount * 100, // convert ₹ to paise
+    currency: 'INR',
     receipt,
-    notes,
+    notes
   });
 
   return order;
