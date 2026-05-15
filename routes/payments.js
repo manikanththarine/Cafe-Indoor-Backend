@@ -201,46 +201,84 @@ router.post('/create-order',verifyToken('customer'), async (req, res) => {
 
 
 
-router.post('/verify-payment',verifyToken('customer'), (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-  const secret = process.env.RAZORPAY_KEY_SECRET;
-  const generatedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-    .digest('hex');
+router.post(
+  '/verify-payment',
+  verifyToken('customer'),
+  asyncHandler(async (req, res) => {
 
-  if (generatedSignature === razorpay_signature) {
-    res.json({ success: true, message: 'Payment Verified ✅' });
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    } = req.body;
 
+    // ✅ Generate signature
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+
+    const generatedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+
+    // ✅ Find payment attempt
     const paymentAttempt = await PaymentAttempt.findOne({
       customer_id: req.user.id,
       razorpay_order_id,
     }).sort({ created_at: -1 });
 
     if (!paymentAttempt) {
-      return res.status(404).json({ error: 'PAYMENT_NOT_FOUND', message: 'Payment order not found' });
+      return res.status(404).json({
+        error: 'PAYMENT_NOT_FOUND',
+        message: 'Payment order not found',
+      });
     }
 
-    if (paymentAttempt.status === 'paid' && paymentAttempt.subscription_id) {
-      const existingSubscription = await Subscription.findById(paymentAttempt.subscription_id);
+    // ✅ Already paid
+    if (
+      paymentAttempt.status === 'paid' &&
+      paymentAttempt.subscription_id
+    ) {
+      const existingSubscription = await Subscription.findById(
+        paymentAttempt.subscription_id
+      );
+
       if (existingSubscription) {
-        return res.json({ success: true, subscription: serializeDoc(existingSubscription) });
+        return res.json({
+          success: true,
+          subscription: serializeDoc(existingSubscription),
+        });
       }
     }
 
-    paymentAttempt.status = 'verification_failed';
-    paymentAttempt.razorpay_payment_id = razorpay_payment_id;
-    paymentAttempt.razorpay_signature = razorpay_signature || null;
-    await paymentAttempt.save();
+    // ❌ Invalid signature
+    if (generatedSignature !== razorpay_signature) {
 
-    return res.status(400).json({ error: 'INVALID_SIGNATURE', message: 'Payment verification failed' });
+      paymentAttempt.status = 'verification_failed';
+      paymentAttempt.razorpay_payment_id = razorpay_payment_id;
+      paymentAttempt.razorpay_signature =
+        razorpay_signature || null;
 
+      await paymentAttempt.save();
 
+      return res.status(400).json({
+        success: false,
+        error: 'INVALID_SIGNATURE',
+        message: 'Payment verification failed ❌',
+      });
+    }
+
+    // ✅ Cancel old subscriptions
     await Subscription.updateMany(
-      { customer_id: req.user.id, status: { $in: ['active', 'paused'] } },
-      { $set: { status: 'cancelled' } }
+      {
+        customer_id: req.user.id,
+        status: { $in: ['active', 'paused'] },
+      },
+      {
+        $set: { status: 'cancelled' },
+      }
     );
 
+    // ✅ Create new subscription
     const subscription = await Subscription.create({
       customer_id: req.user.id,
       plan_type: paymentAttempt.plan_type,
@@ -254,18 +292,29 @@ router.post('/verify-payment',verifyToken('customer'), (req, res) => {
       razorpay_order_id,
     });
 
+    // ✅ Update payment attempt
     paymentAttempt.status = 'paid';
-    paymentAttempt.razorpay_payment_id = razorpay_payment_id;
-    paymentAttempt.razorpay_signature = razorpay_signature || null;
-    paymentAttempt.subscription_id = subscription._id;
+    paymentAttempt.razorpay_payment_id =
+      razorpay_payment_id;
+
+    paymentAttempt.razorpay_signature =
+      razorpay_signature || null;
+
+    paymentAttempt.subscription_id =
+      subscription._id;
+
     paymentAttempt.verified_at = new Date();
+
     await paymentAttempt.save();
 
-
-  } else {
-    res.status(400).json({ success: false, message: 'Invalid Signature ❌' });
-  }
-});
+    // ✅ Success response
+    return res.json({
+      success: true,
+      message: 'Payment Verified ✅',
+      subscription: serializeDoc(subscription),
+    });
+  })
+);
 
 
 
