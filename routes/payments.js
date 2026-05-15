@@ -2,7 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const { addDays, getISTDateString, isCutoffPassed } = require('../services/timeService');
-const { getRazorpay, createOrder, verifySignature } = require('../services/razorpayService');
+// const { getRazorpay, createOrder, verifySignature } = require('../services/razorpayService');
 const { calculateCheckoutAmount, getCheckoutConfig } = require('../services/paymentConfigService');
 const { verifyToken } = require('../middleware/auth');
 const { PaymentAttempt, Subscription } = require('../models');
@@ -22,7 +22,7 @@ const instance = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
-router.post('/create-order', async (req, res) => {
+router.post('/create-order',verifyToken('customer'), async (req, res) => {
   const {
     orderAmount,
     customerName,
@@ -201,7 +201,7 @@ router.post('/create-order', async (req, res) => {
 
 
 
-router.post('/verify-payment', (req, res) => {
+router.post('/verify-payment',verifyToken('customer'), (req, res) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
   const secret = process.env.RAZORPAY_KEY_SECRET;
   const generatedSignature = crypto
