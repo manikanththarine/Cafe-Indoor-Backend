@@ -228,7 +228,7 @@ router.post('/create-order', verifyToken('customer'),
       });
 
       const order = await createOrder({
-        amount:orderAmount,
+        amount:(Number(orderAmount) * 100),
         notes: {
           customerId: String(req.user.id),
           planType,
