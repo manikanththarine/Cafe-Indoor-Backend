@@ -13,7 +13,7 @@ async function createOrder({ amount, receipt, notes }) {
   const isMock = process.env.RAZORPAY_MOCK === 'true';
 
   const order = await instance.orders.create({
-    amount: amount * 100, // convert ₹ to paise
+    amount: amount, // convert ₹ to paise
     currency: 'INR',
     receipt,
     notes
