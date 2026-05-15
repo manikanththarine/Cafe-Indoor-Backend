@@ -45,5 +45,5 @@ function verifySignature({
 module.exports = {
   createOrder,
   verifySignature,
-  getRazorpay
+  
 };
