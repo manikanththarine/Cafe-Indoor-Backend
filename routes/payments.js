@@ -22,52 +22,7 @@ const instance = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
-router.post('/create-order',verifyToken('customer'), async (req, res) => {
-  const {
-    orderAmount,
-    customerName,
-    customerPhone,
-    customerEmail,
-    customer_id,
-    planType, mealType, couponCode, subscriptionPlan = {}
 
-  } = req.body;
-
-  const order = await instance.orders.create({
-    amount: orderAmount * 100, // convert ₹ to paise
-    currency: 'INR',
-    receipt: `receipt_${Date.now()}`,
-  });
-
-
-  await PaymentAttempt.create({
-    customer_id: req.user.id,
-    plan_type: planType,
-    meal_type: mealType,
-    coupon_code: appliedCoupon?.code || null,
-    base_amount: baseAmount,
-    amount: order.amount,
-    currency: order.currency || 'INR',
-    receipt,
-    razorpay_order_id: order.id,
-    start_date: selectedStartDate,
-    end_date: endDate,
-    meal_start_dates: mealStartDates,
-    status: 'created',
-  });
-
-  // res.json({
-  //   order_id: order.id,
-  //   amount: order.amount,
-  //   currency: order.currency || 'INR',
-  //   keyId: process.env.RAZORPAY_KEY_ID || '',
-  //   isMock: !!order.mock,
-  // });
-
-  res.json({
-    order_id: order.id, amount: order.amount, keyId: process.env.RAZORPAY_KEY_ID || '',
-  });
-});
 
 
 // router.post('/create-order', verifyToken('customer'),
@@ -201,6 +156,164 @@ router.post('/create-order',verifyToken('customer'), async (req, res) => {
 
 
 
+
+
+
+
+function isValidDateString(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
+}
+
+function normalizeMealStartDates({ mealType, selectedStartDate, mealStartDates = {} }) {
+  const normalized = {
+    lunch: mealType === 'dinner' ? null : mealStartDates?.lunch || selectedStartDate,
+    dinner: mealType === 'lunch' ? null : mealStartDates?.dinner || selectedStartDate,
+  };
+
+  if (normalized.lunch && !isValidDateString(normalized.lunch)) {
+    const error = new Error('Invalid lunch start date');
+    error.status = 400;
+    error.code = 'INVALID_START_DATE';
+    throw error;
+  }
+
+  if (normalized.dinner && !isValidDateString(normalized.dinner)) {
+    const error = new Error('Invalid dinner start date');
+    error.status = 400;
+    error.code = 'INVALID_START_DATE';
+    throw error;
+  }
+
+  if (normalized.lunch && normalized.lunch < selectedStartDate) {
+    const error = new Error('Lunch start date cannot be before the subscription start date');
+    error.status = 400;
+    error.code = 'INVALID_START_DATE';
+    throw error;
+  }
+
+  if (normalized.dinner && normalized.dinner < selectedStartDate) {
+    const error = new Error('Dinner start date cannot be before the subscription start date');
+    error.status = 400;
+    error.code = 'INVALID_START_DATE';
+    throw error;
+  }
+
+  return normalized;
+}
+
+function validateStartDates({ mealType, selectedStartDate, mealStartDates }) {
+  const today = getISTDateString();
+
+  if (!isValidDateString(selectedStartDate) || selectedStartDate < today) {
+    const error = new Error('Invalid subscription start date');
+    error.status = 400;
+    error.code = 'INVALID_START_DATE';
+    throw error;
+  }
+
+  if (mealStartDates.lunch === today && isCutoffPassed('lunch')) {
+    const error = new Error('Lunch cannot start today because the cutoff has passed');
+    error.status = 400;
+    error.code = 'LUNCH_CUTOFF_PASSED';
+    throw error;
+  }
+
+  if (mealStartDates.dinner === today && isCutoffPassed('dinner')) {
+    const error = new Error('Dinner cannot start today because the cutoff has passed');
+    error.status = 400;
+    error.code = 'DINNER_CUTOFF_PASSED';
+    throw error;
+  }
+
+  if (mealType === 'lunch' && !mealStartDates.lunch) {
+    const error = new Error('Lunch start date is required');
+    error.status = 400;
+    error.code = 'INVALID_START_DATE';
+    throw error;
+  }
+
+  if (mealType === 'dinner' && !mealStartDates.dinner) {
+    const error = new Error('Dinner start date is required');
+    error.status = 400;
+    error.code = 'INVALID_START_DATE';
+    throw error;
+  }
+}
+
+router.get('/checkout-config', asyncHandler(async (_req, res) => {
+  const config = await getCheckoutConfig();
+
+  res.json({
+    keyId: process.env.RAZORPAY_KEY_ID || '',
+    isMock: process.env.RAZORPAY_MOCK === 'true',
+    currency: 'INR',
+    prices: config.prices,
+    coupons: config.coupons,
+  });
+}));
+
+router.post('/create-order',verifyToken('customer'), async (req, res) => {
+  const {
+    orderAmount,
+    customerName,
+    customerPhone,
+    customerEmail,
+    customer_id,
+    planType, mealType, couponCode, subscriptionPlan = {}
+
+  } = req.body;
+
+  const order = await instance.orders.create({
+    amount: orderAmount * 100, // convert ₹ to paise
+    currency: 'INR',
+    receipt: `receipt_${Date.now()}`,
+  });
+
+const { selectedStartDate } = subscriptionPlan;
+      const mealStartDates = normalizeMealStartDates({
+        mealType,
+        selectedStartDate,
+        mealStartDates: subscriptionPlan.mealStartDates,
+      });
+
+      validateStartDates({ mealType, selectedStartDate, mealStartDates });
+
+      const durationDays = PLAN_DURATIONS[planType];
+      const endDate = addDays(selectedStartDate, durationDays - 1);
+      const { amount, baseAmount, appliedCoupon } = await calculateCheckoutAmount({
+        planType,
+        mealType,
+        couponCode,
+      });
+  await PaymentAttempt.create({
+    customer_id: req.user.id,
+    plan_type: planType,
+    meal_type: mealType,
+    coupon_code: appliedCoupon?.code || null,
+    base_amount: baseAmount,
+    amount: order.amount,
+    currency: order.currency || 'INR',
+    receipt,
+    razorpay_order_id: order.id,
+    start_date: selectedStartDate,
+    end_date: endDate,
+    meal_start_dates: mealStartDates,
+    status: 'created',
+  });
+
+  // res.json({
+  //   order_id: order.id,
+  //   amount: order.amount,
+  //   currency: order.currency || 'INR',
+  //   keyId: process.env.RAZORPAY_KEY_ID || '',
+  //   isMock: !!order.mock,
+  // });
+
+  res.json({
+    order_id: order.id, amount: order.amount, keyId: process.env.RAZORPAY_KEY_ID || '',
+  });
+});
+
 router.post(
   '/verify-payment',
   verifyToken('customer'),
@@ -315,104 +428,6 @@ router.post(
     });
   })
 );
-
-
-
-function isValidDateString(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
-}
-
-function normalizeMealStartDates({ mealType, selectedStartDate, mealStartDates = {} }) {
-  const normalized = {
-    lunch: mealType === 'dinner' ? null : mealStartDates?.lunch || selectedStartDate,
-    dinner: mealType === 'lunch' ? null : mealStartDates?.dinner || selectedStartDate,
-  };
-
-  if (normalized.lunch && !isValidDateString(normalized.lunch)) {
-    const error = new Error('Invalid lunch start date');
-    error.status = 400;
-    error.code = 'INVALID_START_DATE';
-    throw error;
-  }
-
-  if (normalized.dinner && !isValidDateString(normalized.dinner)) {
-    const error = new Error('Invalid dinner start date');
-    error.status = 400;
-    error.code = 'INVALID_START_DATE';
-    throw error;
-  }
-
-  if (normalized.lunch && normalized.lunch < selectedStartDate) {
-    const error = new Error('Lunch start date cannot be before the subscription start date');
-    error.status = 400;
-    error.code = 'INVALID_START_DATE';
-    throw error;
-  }
-
-  if (normalized.dinner && normalized.dinner < selectedStartDate) {
-    const error = new Error('Dinner start date cannot be before the subscription start date');
-    error.status = 400;
-    error.code = 'INVALID_START_DATE';
-    throw error;
-  }
-
-  return normalized;
-}
-
-function validateStartDates({ mealType, selectedStartDate, mealStartDates }) {
-  const today = getISTDateString();
-
-  if (!isValidDateString(selectedStartDate) || selectedStartDate < today) {
-    const error = new Error('Invalid subscription start date');
-    error.status = 400;
-    error.code = 'INVALID_START_DATE';
-    throw error;
-  }
-
-  if (mealStartDates.lunch === today && isCutoffPassed('lunch')) {
-    const error = new Error('Lunch cannot start today because the cutoff has passed');
-    error.status = 400;
-    error.code = 'LUNCH_CUTOFF_PASSED';
-    throw error;
-  }
-
-  if (mealStartDates.dinner === today && isCutoffPassed('dinner')) {
-    const error = new Error('Dinner cannot start today because the cutoff has passed');
-    error.status = 400;
-    error.code = 'DINNER_CUTOFF_PASSED';
-    throw error;
-  }
-
-  if (mealType === 'lunch' && !mealStartDates.lunch) {
-    const error = new Error('Lunch start date is required');
-    error.status = 400;
-    error.code = 'INVALID_START_DATE';
-    throw error;
-  }
-
-  if (mealType === 'dinner' && !mealStartDates.dinner) {
-    const error = new Error('Dinner start date is required');
-    error.status = 400;
-    error.code = 'INVALID_START_DATE';
-    throw error;
-  }
-}
-
-router.get('/checkout-config', asyncHandler(async (_req, res) => {
-  const config = await getCheckoutConfig();
-
-  res.json({
-    keyId: process.env.RAZORPAY_KEY_ID || '',
-    isMock: process.env.RAZORPAY_MOCK === 'true',
-    currency: 'INR',
-    prices: config.prices,
-    coupons: config.coupons,
-  });
-}));
-
-
-
-
 // router.post('/verify-payment', verifyToken('customer'),
 //   body('razorpay_payment_id').notEmpty(),
 //   body('razorpay_order_id').notEmpty(),
