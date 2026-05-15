@@ -112,10 +112,8 @@ router.post('/create-order', verifyToken('customer'),
         couponCode,
       });
 
-      const receipt = `ci_${req.user.id}_${Date.now()}`;
       const order = await createOrder({
         amount:orderAmount,
-        receipt,
         notes: {
           customerId: String(req.user.id),
           planType,
@@ -132,7 +130,7 @@ router.post('/create-order', verifyToken('customer'),
         base_amount: baseAmount,
         amount: order.amount,
         currency: order.currency || 'INR',
-        receipt,
+        receipt:order.receipt,
         razorpay_order_id: order.id,
         start_date: selectedStartDate,
         end_date: endDate,
@@ -145,7 +143,7 @@ router.post('/create-order', verifyToken('customer'),
         amount: order.amount,
         currency: order.currency || 'INR',
         keyId: process.env.RAZORPAY_KEY_ID || '',
-        isMock: !!order.mock,
+        isMock: true,
       });  
 
     } catch (error) {
