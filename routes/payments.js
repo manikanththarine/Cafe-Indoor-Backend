@@ -301,11 +301,10 @@ router.post('/verify-payment', verifyToken('customer'),
       }
     }
 
-    const isMock = process.env.RAZORPAY_MOCK === 'true' || razorpay_order_id.startsWith('mock_order_');
-    const valid = isMock || verifySignature({
+    const valid = verifySignature({
       razorpay_order_id,
       razorpay_payment_id,
-      razorpay_signature: razorpay_signature || '',
+      razorpay_signature,
     });
 
     if (!valid) {
