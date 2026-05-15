@@ -114,7 +114,7 @@ router.post('/create-order', verifyToken('customer'),
 
       const receipt = `ci_${req.user.id}_${Date.now()}`;
       const order = await createOrder({
-        orderAmount,
+        amount:orderAmount,
         receipt,
         notes: {
           customerId: String(req.user.id),
