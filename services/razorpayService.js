@@ -9,20 +9,17 @@ const instance = new Razorpay({
 });
 
 // ✅ CREATE ORDER (used in /create-order route)
-async function createOrder({ amount, notes = {} }) {
-  try {
-    const order = await instance.orders.create({
-      amount: (Number(amount) * 100),
-      currency: "INR",
-      receipt: `receipt_${notes.customerId || "cust"}_${Date.now()}`,
-      notes,
-    });
+async function createOrder({ amount, receipt, notes }) {
+  const isMock = process.env.RAZORPAY_MOCK === 'true';
 
-    return order;
-  } catch (error) {
-    console.error("Razorpay order error:", error);
-    throw error;
-  }
+  const order = await instance.orders.create({
+    amount: Number(amount)*100, // convert ₹ to paise
+    currency: 'INR',
+    receipt,
+    notes
+  });
+
+  return order;
 }
 
 // ✅ VERIFY SIGNATURE (used in /verify route)
