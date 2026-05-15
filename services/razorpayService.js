@@ -12,7 +12,7 @@ const instance = new Razorpay({
 async function createOrder({ amount, notes = {} }) {
   try {
     const order = await instance.orders.create({
-      amount: Math.round(Number(amount) * 100),
+      amount: (Number(amount) * 100),
       currency: "INR",
       receipt: `receipt_${notes.customerId || "cust"}_${Date.now()}`,
       notes,
