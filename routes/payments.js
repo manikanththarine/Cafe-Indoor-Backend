@@ -128,7 +128,7 @@ router.get(
 // ─────────────────────────────────────────────
 router.post(
   '/create-order',
-  // verifyToken('customer'),
+  verifyToken('customer'),
   asyncHandler(async (req, res) => {
     const {
       orderAmount,
@@ -138,30 +138,30 @@ router.post(
       subscriptionPlan = {},
     } = req.body;
 
-    // // 1. Validate & normalize dates
-    // const { selectedStartDate } = subscriptionPlan;
+    // 1. Validate & normalize dates
+    const { selectedStartDate } = subscriptionPlan;
 
-    // const mealStartDates = normalizeMealStartDates({
-    //   mealType,
-    //   selectedStartDate,
-    //   mealStartDates: subscriptionPlan.mealStartDates,
-    // });
+    const mealStartDates = normalizeMealStartDates({
+      mealType,
+      selectedStartDate,
+      mealStartDates: subscriptionPlan.mealStartDates,
+    });
 
-    // validateStartDates({ mealType, selectedStartDate, mealStartDates });
+    validateStartDates({ mealType, selectedStartDate, mealStartDates });
 
-    // // 2. Calculate amount & coupon
-    // const { baseAmount, appliedCoupon } = await calculateCheckoutAmount({
-    //   planType,
-    //   mealType,
-    //   couponCode,
-    // });
+    // 2. Calculate amount & coupon
+    const { baseAmount, appliedCoupon } = await calculateCheckoutAmount({
+      planType,
+      mealType,
+      couponCode,
+    });
 
-    // // 3. Compute end date
-    // const durationDays = PLAN_DURATIONS[planType];
-    // const endDate = addDays(selectedStartDate, durationDays - 1);
+    // 3. Compute end date
+    const durationDays = PLAN_DURATIONS[planType];
+    const endDate = addDays(selectedStartDate, durationDays - 1);
 
     // 4. Create Razorpay order (amount in paise)
-    const receipt = `ci_${Date.now()}`;
+    const receipt = `ci_${req.user.id}_${Date.now()}`;
 
     const order = await instance.orders.create({
       amount: Math.round(Number(orderAmount) * 100), // ₹ → paise
@@ -170,22 +170,22 @@ router.post(
     });
 
     // 5. Save PaymentAttempt
-    // await PaymentAttempt.create({
-    //   customer_id: req.user.id,
-    //   plan_type: planType,
-    //   meal_type: mealType,
-    //   coupon_code: appliedCoupon?.code || null,
-    //   base_amount: baseAmount,
-    //   amount: order.amount,           // already in paise from Razorpay
-    //   currency: order.currency || 'INR',
-    //   receipt,
-    //   razorpay_order_id: order.id,
-    //   start_date: selectedStartDate,
-    //   end_date: endDate,
-    //   meal_start_dates: mealStartDates,
-    //   status: 'created',
-    // });
-    // await paymentAttempt.save();
+    await PaymentAttempt.create({
+      customer_id: req.user.id,
+      plan_type: planType,
+      meal_type: mealType,
+      coupon_code: appliedCoupon?.code || null,
+      base_amount: baseAmount,
+      amount: order.amount,           // already in paise from Razorpay
+      currency: order.currency || 'INR',
+      receipt,
+      razorpay_order_id: order.id,
+      start_date: selectedStartDate,
+      end_date: endDate,
+      meal_start_dates: mealStartDates,
+      status: 'created',
+    });
+    await paymentAttempt.save();
 
     // 6. Return order details to frontend
     return res.json({
