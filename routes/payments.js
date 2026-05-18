@@ -131,67 +131,129 @@ router.post(
   verifyToken('customer'),
   asyncHandler(async (req, res) => {
     const {
-      orderAmount,
       planType,
       mealType,
       couponCode,
       subscriptionPlan = {},
     } = req.body;
 
-    // // 1. Validate & normalize dates
+    // ─────────────────────────────────────────────
+    // 1. Validate required fields
+    // ─────────────────────────────────────────────
+    if (!planType || !mealType) {
+      return res.status(400).json({
+        success: false,
+        error: 'MISSING_FIELDS',
+        message: 'planType and mealType are required',
+      });
+    }
+
+    if (!PLAN_DURATIONS[planType]) {
+      return res.status(400).json({
+        success: false,
+        error: 'INVALID_PLAN',
+        message: 'Invalid plan type',
+      });
+    }
+
     const { selectedStartDate } = subscriptionPlan;
 
+    if (!selectedStartDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'INVALID_START_DATE',
+        message: 'selectedStartDate is required',
+      });
+    }
+
+    // ─────────────────────────────────────────────
+    // 2. Normalize & validate meal dates
+    // ─────────────────────────────────────────────
     const mealStartDates = normalizeMealStartDates({
       mealType,
       selectedStartDate,
       mealStartDates: subscriptionPlan.mealStartDates,
     });
 
-    // validateStartDates({ mealType, selectedStartDate, mealStartDates });
+    validateStartDates({
+      mealType,
+      selectedStartDate,
+      mealStartDates,
+    });
 
-    // // 2. Calculate amount & coupon
-    // const { baseAmount, appliedCoupon } = await calculateCheckoutAmount({
-    //   planType,
-    //   mealType,
-    //   couponCode,
-    // });
+    // ─────────────────────────────────────────────
+    // 3. Calculate amount securely from backend
+    // ─────────────────────────────────────────────
+    const { baseAmount, appliedCoupon } =
+      await calculateCheckoutAmount({
+        planType,
+        mealType,
+        couponCode,
+      });
 
-    // // 3. Compute end date
-    // const durationDays = PLAN_DURATIONS[planType];
-    const endDate = addDays(selectedStartDate, durationDays - 1);
+    // ─────────────────────────────────────────────
+    // 4. Compute subscription end date
+    // ─────────────────────────────────────────────
+    const durationDays = PLAN_DURATIONS[planType];
 
-    // 4. Create Razorpay order (amount in paise)
+    const endDate = addDays(
+      selectedStartDate,
+      durationDays - 1
+    );
+
+    // ─────────────────────────────────────────────
+    // 5. Create Razorpay order
+    // Razorpay expects amount in paise
+    // ─────────────────────────────────────────────
     const receipt = `ci_${Date.now()}`;
 
     const order = await instance.orders.create({
-      amount: Math.round(Number(orderAmount) * 100), // ₹ → paise
+      amount: Math.round(baseAmount * 100),
       currency: 'INR',
       receipt,
     });
 
-    // 5. Save PaymentAttempt
+    // ─────────────────────────────────────────────
+    // 6. Save payment attempt
+    // ─────────────────────────────────────────────
     await PaymentAttempt.create({
       customer_id: req.user.id,
+
       plan_type: planType,
       meal_type: mealType,
-      coupon_code: couponCode || null,
-      base_amount: order.amount,
-      amount: order.amount,           // already in paise from Razorpay
+
+      coupon_code: appliedCoupon?.code || null,
+
+      base_amount: baseAmount, // ₹
+      amount: order.amount / 100, // ₹
+
       currency: order.currency || 'INR',
+
       receipt,
       razorpay_order_id: order.id,
+
       start_date: selectedStartDate,
       end_date: endDate,
+
       meal_start_dates: mealStartDates,
+
       status: 'created',
     });
-    // 6. Return order details to frontend
 
+    // ─────────────────────────────────────────────
+    // 7. Return order details
+    // ─────────────────────────────────────────────
     return res.json({
+      success: true,
+
       order_id: order.id,
-      amount: order.amount,           // paise — frontend passes this to Razorpay SDK as-is
+
+      amount: order.amount, // paise
       currency: order.currency || 'INR',
+
       keyId: process.env.RAZORPAY_KEY_ID || '',
+
+      appliedCoupon: appliedCoupon || null,
     });
   })
 );
