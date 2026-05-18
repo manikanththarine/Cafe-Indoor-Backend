@@ -128,7 +128,7 @@ router.get(
 // ─────────────────────────────────────────────
 router.post(
   '/create-order',
-  verifyToken('customer'),
+  // verifyToken('customer'),
   asyncHandler(async (req, res) => {
     const {
       orderAmount,
@@ -138,27 +138,27 @@ router.post(
       subscriptionPlan = {},
     } = req.body;
 
-    // 1. Validate & normalize dates
-    const { selectedStartDate } = subscriptionPlan;
+    // // 1. Validate & normalize dates
+    // const { selectedStartDate } = subscriptionPlan;
 
-    const mealStartDates = normalizeMealStartDates({
-      mealType,
-      selectedStartDate,
-      mealStartDates: subscriptionPlan.mealStartDates,
-    });
+    // const mealStartDates = normalizeMealStartDates({
+    //   mealType,
+    //   selectedStartDate,
+    //   mealStartDates: subscriptionPlan.mealStartDates,
+    // });
 
-    validateStartDates({ mealType, selectedStartDate, mealStartDates });
+    // validateStartDates({ mealType, selectedStartDate, mealStartDates });
 
-    // 2. Calculate amount & coupon
-    const { baseAmount, appliedCoupon } = await calculateCheckoutAmount({
-      planType,
-      mealType,
-      couponCode,
-    });
+    // // 2. Calculate amount & coupon
+    // const { baseAmount, appliedCoupon } = await calculateCheckoutAmount({
+    //   planType,
+    //   mealType,
+    //   couponCode,
+    // });
 
-    // 3. Compute end date
-    const durationDays = PLAN_DURATIONS[planType];
-    const endDate = addDays(selectedStartDate, durationDays - 1);
+    // // 3. Compute end date
+    // const durationDays = PLAN_DURATIONS[planType];
+    // const endDate = addDays(selectedStartDate, durationDays - 1);
 
     // 4. Create Razorpay order (amount in paise)
     const receipt = `ci_${req.user.id}_${Date.now()}`;
