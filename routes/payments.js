@@ -161,7 +161,7 @@ router.post(
     // const endDate = addDays(selectedStartDate, durationDays - 1);
 
     // 4. Create Razorpay order (amount in paise)
-    const receipt = `ci_${req.user.id}_${Date.now()}`;
+    const receipt = `ci_${Date.now()}`;
 
     const order = await instance.orders.create({
       amount: Math.round(Number(orderAmount) * 100), // ₹ → paise
