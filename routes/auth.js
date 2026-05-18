@@ -46,18 +46,18 @@ router.post(
 
     console.log(phone);
 
-    const response = await client.verify.v2
-      .services(process.env.TWILIO_VERIFY_SERVICE_SID)
-      .verifications.create({
-        to: phone,
-        channel: 'sms',
-      });
+    // const response = await client.verify.v2
+    //   .services(process.env.TWILIO_VERIFY_SERVICE_SID)
+    //   .verifications.create({
+    //     to: phone,
+    //     channel: 'sms',
+    //   });
 
     return res.status(200).json({
       success: true,
       message: 'OTP sent successfully',
-      sid: response.sid,
-      status: response.status,
+      // sid: response.sid,
+      // status: response.status,
     });
 
   })
@@ -94,22 +94,22 @@ router.post(
 
     phone = `+91${phone}`;
 
-    const verificationCheck = await client.verify.v2
-      .services(process.env.TWILIO_VERIFY_SERVICE_SID)
-      .verificationChecks.create({
-        to: phone,
-        code: otp,
-      });
+    // const verificationCheck = await client.verify.v2
+    //   .services(process.env.TWILIO_VERIFY_SERVICE_SID)
+    //   .verificationChecks.create({
+    //     to: phone,
+    //     code: otp,
+    //   });
 
     // FIXED CONDITION
-    if (verificationCheck.status !== 'approved') {
+    // if (verificationCheck.status !== 'approved') {
 
-      return res.status(400).json({
-        success: false,
-        error: 'WRONG_OTP',
-        message: 'Incorrect OTP.',
-      });
-    } else {
+    //   return res.status(400).json({
+    //     success: false,
+    //     error: 'WRONG_OTP',
+    //     message: 'Incorrect OTP.',
+    //   });
+    // } else {
       if (loginrole === "partner") {
         const partner = await DeliveryPartner.findOne({ phone });
 
@@ -135,7 +135,7 @@ router.post(
           token,
           user: { id: safeCustomer.id, name: safeCustomer.name, phone, hasAddress: !!safeCustomer.address_line1, area: safeCustomer.area, address: safeCustomer.address_line1 },
         });
-      }
+      // }
     }
 
     // PARTNER LOGIN
