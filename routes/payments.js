@@ -170,21 +170,22 @@ router.post(
     });
 
     // 5. Save PaymentAttempt
-    await PaymentAttempt.create({
-      customer_id: req.user.id,
-      plan_type: planType,
-      meal_type: mealType,
-      coupon_code: appliedCoupon?.code || null,
-      base_amount: baseAmount,
-      amount: order.amount,           // already in paise from Razorpay
-      currency: order.currency || 'INR',
-      receipt,
-      razorpay_order_id: order.id,
-      start_date: selectedStartDate,
-      end_date: endDate,
-      meal_start_dates: mealStartDates,
-      status: 'created',
-    });
+    // await PaymentAttempt.create({
+    //   customer_id: req.user.id,
+    //   plan_type: planType,
+    //   meal_type: mealType,
+    //   coupon_code: appliedCoupon?.code || null,
+    //   base_amount: baseAmount,
+    //   amount: order.amount,           // already in paise from Razorpay
+    //   currency: order.currency || 'INR',
+    //   receipt,
+    //   razorpay_order_id: order.id,
+    //   start_date: selectedStartDate,
+    //   end_date: endDate,
+    //   meal_start_dates: mealStartDates,
+    //   status: 'created',
+    // });
+    // await paymentAttempt.save();
 
     // 6. Return order details to frontend
     return res.json({
