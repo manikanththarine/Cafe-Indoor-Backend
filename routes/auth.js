@@ -110,6 +110,7 @@ router.post(
     //     message: 'Incorrect OTP.',
     //   });
     // } else {
+      
       if (loginrole === "partner") {
         const partner = await DeliveryPartner.findOne({ phone });
 
