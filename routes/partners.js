@@ -9,7 +9,7 @@ const { serializeDoc } = require('../utils/mongo');
 
 const router = express.Router();
 
-router.get('/orders/today',verifyToken('partner'), asyncHandler(async (req, res) => {
+router.get('/orders/today', verifyToken('partner'), asyncHandler(async (req, res) => {
   const today = getISTDateString();
   const orders = await Order.find({
     partner_id: req.user.id,
@@ -76,7 +76,7 @@ router.put('/duty', verifyToken('partner'), asyncHandler(async (req, res) => {
 
 router.get('/profile', verifyToken('partner'), asyncHandler(async (req, res) => {
   const partner = await DeliveryPartner.findById(req.user.id);
-  console.log(serializeDoc(partner) )
+  console.log(serializeDoc(partner))
   res.json({ partner: partner ? serializeDoc(partner) : null });
 }));
 
@@ -129,7 +129,7 @@ router.post('/', verifyToken('admin'),
     if (!errors.isEmpty()) return res.status(400).json({ error: 'VALIDATION_ERROR' });
 
     const { name, phone, vehicleType, areas } = req.body;
-
+    phone = `+91${phone}`;
     try {
       const partner = await DeliveryPartner.create({
         name,
