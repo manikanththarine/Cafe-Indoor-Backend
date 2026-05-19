@@ -114,12 +114,12 @@ router.post(
       if (loginrole === "partner") {
         const partner = await DeliveryPartner.findOne({ phone });
 
-        const token = signToken({ id: partner.id, phone, role: 'partner', name: partner.name });
+        const token = signToken({ id: partner._id, phone, role: 'partner', name: partner.name });
         return res.json({
           success: true,
           role: 'partner',
           token,
-          user: { id: partner.id, name: partner.name, phone, isOnDuty: !!partner.is_on_duty },
+          user: { id: partner._id, name: partner.name, phone, isOnDuty: !!partner.is_on_duty },
         });
 
       } else {
